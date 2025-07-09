@@ -56,3 +56,16 @@ done
 kubectl scale deployment details-v1 -n bookinfo --replicas=0
 ```
 ## Traffic should shift to UsEast Topology
+
+# Ambient Mode
+
+## waypoint is automatically instantiated per namespace where the ambient deployment exists
+```sh
+kubectl get gateway waypoint -n caffeine -o yaml
+```
+## Validate ztunnel configuration
+```sh
+istioctl ztunnel-config  service -n istio-system | grep caffeine
+istioctl ztunnel-config workload  -n cnp-istio | grep caffeine
+```
+

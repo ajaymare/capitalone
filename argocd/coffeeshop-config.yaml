@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: bookinfo-config
+  name: coffeeshop-config
   namespace: argocd
 spec:
   destination:
