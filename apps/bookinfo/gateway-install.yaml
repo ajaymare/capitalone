@@ -22,3 +22,10 @@ items:
           type: LoadBalancer
           #annotations:
           #  external-dns.alpha.kubernetes.io/hostname: gateway.tetrate.io
+  - apiVersion: install.tetrate.io/v1alpha1
+    kind: Gateway
+    metadata:
+      name: eastwest-gateway
+      namespace: eastwest
+    spec:
+      type: EASTWEST
