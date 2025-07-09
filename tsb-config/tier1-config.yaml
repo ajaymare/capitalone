@@ -94,5 +94,9 @@ items:
           rules:
           - route:
               clusterDestination:
-                clusters: {}
+                clusters: 
+                  - name: azure-centralus
+                    weight: 50
+                  - name: azure-eastus
+                    weight: 50
                   
