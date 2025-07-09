@@ -351,18 +351,3 @@ spec:
       volumes:
       - name: tmp
         emptyDir: {}
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: bookinfo-ugw
-  labels:
-    istio-injection: enabled
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: tier1
-  labels:
-    istio-injection: enabled
----
