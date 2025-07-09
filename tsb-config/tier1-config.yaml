@@ -1,0 +1,69 @@
+---
+apiVersion: v1
+kind: List
+items:
+  - apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: tier1
+      labels:
+        istio-injection: enabled
+  - apiVersion: tsb.tetrate.io/v2
+    kind: Tenant
+    metadata:
+      name: tier1
+      annotations:
+        tsb.tetrate.io/organization: capitalone
+    spec:
+      description: tier1
+      displayName: tier1
+  - apiVersion: tsb.tetrate.io/v2
+    kind: Workspace
+    metadata:
+      name: tier1-ws
+      annotations:
+        tsb.tetrate.io/organization: capitalone
+        tsb.tetrate.io/tenant: tier1
+    spec:
+      namespaceSelector:
+        names:
+          - "azure-centralus/tier1"
+  - apiVersion: gateway.tsb.tetrate.io/v2
+    kind: Group
+    metadata:
+      name: tier1-gg
+      annotations:
+        tsb.tetrate.io/organization: capitalone
+        tsb.tetrate.io/tenant: tier1
+        tsb.tetrate.io/workspace: tier1-ws
+    spec:
+      namespaceSelector:
+        names:
+          - "azure-centralus/tier1"
+      configMode: BRIDGED
+  - apiVersion: traffic.tsb.tetrate.io/v2
+    kind: Group
+    metadata:
+      name: tier1-tg
+      annotations:
+        tsb.tetrate.io/organization: capitalone
+        tsb.tetrate.io/tenant: tier1
+        tsb.tetrate.io/workspace: tier1-ws
+    spec:
+      namespaceSelector:
+        names:
+          - "azure-centralus/tier1"
+      configMode: BRIDGED
+  - apiVersion: security.tsb.tetrate.io/v2
+    kind: Group
+    metadata:
+      name: tier1-sg
+      annotations:
+        tsb.tetrate.io/organization: capitalone
+        tsb.tetrate.io/tenant: tier1
+        tsb.tetrate.io/workspace: tier1-ws
+    spec:
+      namespaceSelector:
+        names:
+          - "azure-centralus/tier1"
+      configMode: BRIDGED
