@@ -18,6 +18,8 @@ items:
       annotations:
         tsb.tetrate.io/organization: capitalone
         tsb.tetrate.io/tenant: bookinfo-sidecar
+      labels:
+        app: bookinfo
     spec:
       namespaceSelector:
         names:
@@ -35,29 +37,25 @@ items:
         names:
           - "*/bookinfo"
       configMode: BRIDGED
-  - apiVersion: traffic.tsb.tetrate.io/v2
-    kind: Group
+  - apiVersion: tsb.tetrate.io/v2
+    kind: WorkspaceSetting
     metadata:
-      name: bookinfo-tg
+      name: bookinfo-wss
+      namespace: bookinfo
       annotations:
         tsb.tetrate.io/organization: capitalone
         tsb.tetrate.io/tenant: bookinfo-sidecar
         tsb.tetrate.io/workspace: bookinfo-ws
     spec:
-      namespaceSelector:
-        names:
-          - "*/bookinfo"
-      configMode: BRIDGED
-  - apiVersion: security.tsb.tetrate.io/v2
-    kind: Group
-    metadata:
-      name: bookinfo-sg
-      annotations:
-        tsb.tetrate.io/organization: capitalone
-        tsb.tetrate.io/tenant: bookinfo-sidecar
-        tsb.tetrate.io/workspace: bookinfo-ws
-    spec:
-      namespaceSelector:
-        names:
-          - "*/bookinfo"
-      configMode: BRIDGED
+      failoverSettings:
+        topologyChoice: CLUSTER
+      defaultEastWestGatewaySettings:
+        - workloadSelector:
+            namespace: bookinfo
+            labels:
+              app: eastwest-gateway
+          #exposedServices:
+          #  - serviceLabels:
+          #      app: reviews
+          #  - serviceLabels:
+          #      app: details
