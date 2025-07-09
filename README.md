@@ -1,7 +1,7 @@
 # capitalone
 capital One Demo
 
-# TSB Access
+## TSB Access
 ```sh
 https://capitalone.azure.sandbox.tetrate.io/
 username: admin
@@ -9,6 +9,7 @@ password: Tetrate123
 ```
 
 # Deploying ArgoCD
+
 ```sh
 kubectl create namespace argocd
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
@@ -21,9 +22,6 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 ```sh
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 ```
-
-# Deploying Application on Clusters using GitOps
-Argo will deploy the applications on clusters and configure TSB
 
 ## Access tier1 gateway
 ```sh
@@ -42,7 +40,8 @@ kubectl scale deployment bookinfo-ugw -n bookinfo --replicas=0
 kubectl scale deployment bookinfo-ugw -n bookinfo --replicas=1 
 ```
 
-## Eastwest Traffic Failover to useast cluster
+# Eastwest Traffic Failover to useast cluster
+
 ## Access Application internally 
 ```sh
 while true                                      
@@ -56,6 +55,11 @@ done
 kubectl scale deployment details-v1 -n bookinfo --replicas=0
 ```
 ## Traffic should shift to UsEast Topology
+
+## Bring the Deployment back 
+```sh
+kubectl scale deployment details-v1 -n bookinfo --replicas=1
+```
 
 # Ambient Mode
 
