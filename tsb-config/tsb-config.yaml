@@ -1,0 +1,63 @@
+---
+apiVersion: v1
+kind: List
+items:
+  - apiVersion: tsb.tetrate.io/v2
+    kind: Tenant
+    metadata:
+      name: bookinfo-sidecar
+      annotations:
+        tsb.tetrate.io/organization: capitalone
+    spec:
+      description: bookinfo sidecar Mode
+      displayName: bookinfo-sidecar
+  - apiVersion: tsb.tetrate.io/v2
+    kind: Workspace
+    metadata:
+      name: bookinfo-ws
+      annotations:
+        tsb.tetrate.io/organization: capitalone
+        tsb.tetrate.io/tenant: bookinfo-sidecar
+    spec:
+      namespaceSelector:
+        names:
+          - "*/bookinfo"
+  - apiVersion: gateway.tsb.tetrate.io/v2
+    kind: Group
+    metadata:
+      name: bookinfo-gg
+      annotations:
+        tsb.tetrate.io/organization: capitalone
+        tsb.tetrate.io/tenant: bookinfo-sidecar
+        tsb.tetrate.io/workspace: bookinfo-ws
+    spec:
+      namespaceSelector:
+        names:
+          - "*/bookinfo"
+      configMode: BRIDGED
+  - apiVersion: traffic.tsb.tetrate.io/v2
+    kind: Group
+    metadata:
+      name: bookinfo-tg
+      annotations:
+        tsb.tetrate.io/organization: capitalone
+        tsb.tetrate.io/tenant: bookinfo-sidecar
+        tsb.tetrate.io/workspace: bookinfo-ws
+    spec:
+      namespaceSelector:
+        names:
+          - "*/bookinfo"
+      configMode: BRIDGED
+  - apiVersion: security.tsb.tetrate.io/v2
+    kind: Group
+    metadata:
+      name: bookinfo-sg
+      annotations:
+        tsb.tetrate.io/organization: capitalone
+        tsb.tetrate.io/tenant: bookinfo-sidecar
+        tsb.tetrate.io/workspace: bookinfo-ws
+    spec:
+      namespaceSelector:
+        names:
+          - "*/bookinfo"
+      configMode: BRIDGED
