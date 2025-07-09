@@ -72,4 +72,11 @@ kubectl get gateway waypoint -n caffeine -o yaml
 istioctl ztunnel-config  service -n istio-system | grep caffeine
 istioctl ztunnel-config workload  -n cnp-istio | grep caffeine
 ```
-
+```sh
+while true                                      
+do
+kubectl exec deployment/sleep -n sleep -c sleep -- curl -s -k http://coffee-shop:8000
+sleep 1
+done
+```
+while true; do curl -s http://coffee-shop:8000 -k -w \"@/etc/curl/curl-format.txt\"; sleep $INTERVAL; done

@@ -1,0 +1,318 @@
+# Deploy the Nicolaka netshoot container as a debugging and testing tool
+#---
+#apiVersion: v1
+#kind: ConfigMap
+#metadata:
+#  name: curl-format
+#data:
+#  curl-format.txt: |
+#    time_namelookup:  %{time_namelookup}s
+#    time_connect:  %{time_connect}s
+#    time_appconnect:  %{time_appconnect}s
+#    time_pretransfer:  %{time_pretransfer}s
+#    time_redirect:  %{time_redirect}s
+#    time_starttransfer:  %{time_starttransfer}s
+#    ----------
+#    time_total:  %{time_total}s
+#---
+#apiVersion: v1
+#kind: ServiceAccount
+#metadata:
+#  name: netshoot
+#---
+#apiVersion: apps/v1
+#kind: Deployment
+#metadata:
+#  name: netshoot
+#  labels:
+#    app: netshoot
+#spec:
+#  replicas: 1
+#  selector:
+#    matchLabels:
+#      app: netshoot
+#  template:
+#    metadata:
+#      annotations:
+#        sidecar.istio.io/proxyCPU: "25m"
+#        sidecar.istio.io/proxyCPULimit: "50m"
+#        sidecar.istio.io/proxyMemory: "64Mi"
+#        sidecar.istio.io/proxyMemoryLimit: "128Mi"
+#      labels:
+#        app: netshoot
+#        istio.io/dataplane-mode: ambient
+#    spec:
+#      serviceAccountName: netshoot
+#      containers:
+#      - name: netshoot
+#        image: nicolaka/netshoot:latest
+#        imagePullPolicy: IfNotPresent
+#        command: ["sh", "-c", "while true; do curl -s http://coffee-shop:8000 -k -w \"@/etc/curl/curl-format.txt\"; sleep $INTERVAL; done"]
+#        resources:
+#          limits:
+#            cpu: 100m
+#            memory: 128Mi
+#          requests:
+#            cpu: 50m
+#            memory: 64Mi
+#        env:
+#        - name: INTERVAL
+#          value: "10"
+#        volumeMounts:
+#        - name: curl-format-volume
+#          mountPath: /etc/curl
+#      volumes:
+#      - name: curl-format-volume
+#        configMap:
+#          name: curl-format
+
+# Deploy the application services
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: coffee-shop
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coffee-shop
+  labels:
+    app: coffee-shop
+    service: coffee-shop
+spec:
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8080
+  selector:
+    app: coffee-shop
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coffee-shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coffee-shop
+      version: v1
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/proxyCPU: "25m"
+        sidecar.istio.io/proxyCPULimit: "50m"
+        sidecar.istio.io/proxyMemory: "64Mi"
+        sidecar.istio.io/proxyMemoryLimit: "128Mi"
+      labels:
+        app: coffee-shop
+        version: v1
+        istio.io/dataplane-mode: ambient
+    spec:
+      serviceAccountName: coffee-shop
+      containers:
+      - image: python:3.9
+        imagePullPolicy: IfNotPresent
+        name: coffee-shop
+        # Command for coffee-shop that will talk to barista and coffee-bean
+        command: ["python3", "-c", "import http.server, socketserver, threading, time, urllib.request, json, os\ntry:\n    import queue\nexcept ImportError:\n    import Queue as queue\n\n# Get service URLs from environment variables\nbarista_url = os.environ.get('BARISTA_URL', 'http://barista:8000')\ncoffee_bean_url = os.environ.get('COFFEE_BEAN_URL', 'http://coffee-bean:8000')\n# Get interval from environment variables (in seconds)\ninterval = float(os.environ.get('INTERVAL', '10'))\n\nprint(f'Coffee Shop running, connecting to Barista ({barista_url}) and Coffee Bean ({coffee_bean_url})')\nprint(f'Using interval of {interval} seconds for periodic calls')\n\nclass RequestHandler(http.server.SimpleHTTPRequestHandler):\n    def do_GET(self):\n        self.send_response(200)\n        self.send_header('Content-type', 'application/json')\n        self.end_headers()\n        response = {\n            'service': 'coffee-shop',\n            'status': 'ok',\n            'time': time.time(),\n            'connecting_to': {\n                'barista': barista_url,\n                'coffee_bean': coffee_bean_url\n            },\n            'interval': interval\n        }\n        self.wfile.write(json.dumps(response).encode())\n\ndef call_service(url, service_name):\n    try:\n        with urllib.request.urlopen(url, timeout=1) as response:\n            result = response.read()\n            print(f'Called {service_name} successfully: {result[:100]}')\n    except Exception as e:\n        print(f'Error calling {service_name}: {e}')\n\ndef periodic_calls():\n    while True:\n        # Call Barista\n        call_service(barista_url, 'Barista')\n        # Call Coffee Bean\n        call_service(coffee_bean_url, 'Coffee Bean')\n        time.sleep(interval)  # Wait for configured interval\n\n# Start the background thread for periodic calls\nthread = threading.Thread(target=periodic_calls, daemon=True)\nthread.start()\n\n# Start the HTTP server\nhttpd = socketserver.TCPServer(('', 8080), RequestHandler)\nhttpd.serve_forever()"]
+        env:
+        - name: WORKON_HOME
+          value: /tmp
+        - name: BARISTA_URL
+          value: "http://barista:8000"
+        - name: COFFEE_BEAN_URL
+          value: "http://coffee-bean:8000"
+        - name: INTERVAL
+          value: "10"
+        ports:
+        - containerPort: 8080
+        resources:
+          limits:
+            cpu: 50m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: barista
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: barista
+  labels:
+    app: barista
+    service: barista
+spec:
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8080
+  selector:
+    app: barista
+    # Note: This service will select both v1 and v2 pods
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: barista-v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: barista
+      version: v1
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/proxyCPU: "25m"
+        sidecar.istio.io/proxyCPULimit: "50m"
+        sidecar.istio.io/proxyMemory: "64Mi"
+        sidecar.istio.io/proxyMemoryLimit: "128Mi"
+      labels:
+        app: barista
+        version: v1
+        istio.io/dataplane-mode: ambient
+    spec:
+      serviceAccountName: barista
+      containers:
+      - image: python:3.9
+        imagePullPolicy: IfNotPresent
+        name: barista
+        # Command for barista v1 that will talk to coffee-bean
+        command: ["python3", "-c", "import http.server, socketserver, threading, time, urllib.request, json, os\ntry:\n    import queue\nexcept ImportError:\n    import Queue as queue\n\n# Get environment variables\nversion = os.environ.get('VERSION', 'v1')\ncoffee_bean_url = os.environ.get('COFFEE_BEAN_URL', 'http://coffee-bean:8000')\n# Get interval from environment variables (in seconds)\ninterval = float(os.environ.get('INTERVAL', '10'))\n\nprint(f'Barista {version} running, connecting to Coffee Bean ({coffee_bean_url})')\nprint(f'Using interval of {interval} seconds for periodic calls')\n\nclass RequestHandler(http.server.SimpleHTTPRequestHandler):\n    def do_GET(self):\n        self.send_response(200)\n        self.send_header('Content-type', 'application/json')\n        self.end_headers()\n        response = {\n            'service': 'barista',\n            'version': version,\n            'status': 'ok', \n            'time': time.time(),\n            'connecting_to': {\n                'coffee_bean': coffee_bean_url\n            },\n            'interval': interval\n        }\n        self.wfile.write(json.dumps(response).encode())\n\ndef call_service(url, service_name):\n    try:\n        with urllib.request.urlopen(url, timeout=1) as response:\n            result = response.read()\n            print(f'Called {service_name} successfully: {result[:100]}')\n    except Exception as e:\n        print(f'Error calling {service_name}: {e}')\n\ndef periodic_calls():\n    while True:\n        # Call Coffee Bean\n        call_service(coffee_bean_url, 'Coffee Bean')\n        time.sleep(interval)  # Wait for configured interval\n\n# Start the background thread for periodic calls\nthread = threading.Thread(target=periodic_calls, daemon=True)\nthread.start()\n\n# Start the HTTP server\nhttpd = socketserver.TCPServer(('', 8080), RequestHandler)\nhttpd.serve_forever()"]
+        env:
+        - name: WORKON_HOME
+          value: /tmp
+        - name: COFFEE_BEAN_URL
+          value: "http://coffee-bean:8000"
+        - name: VERSION
+          value: "v1"
+        - name: INTERVAL
+          value: "10"
+        ports:
+        - containerPort: 8080
+        resources:
+          limits:
+            cpu: 50m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: barista-v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: barista
+      version: v2
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/proxyCPU: "25m"
+        sidecar.istio.io/proxyCPULimit: "50m"
+        sidecar.istio.io/proxyMemory: "64Mi"
+        sidecar.istio.io/proxyMemoryLimit: "128Mi"
+      labels:
+        app: barista
+        version: v2
+        istio.io/dataplane-mode: ambient
+    spec:
+      serviceAccountName: barista
+      containers:
+      - image: python:3.9
+        imagePullPolicy: IfNotPresent
+        name: barista
+        # Command for barista v2 that will talk to coffee-bean
+        command: ["python3", "-c", "import http.server, socketserver, threading, time, urllib.request, json, os, random\ntry:\n    import queue\nexcept ImportError:\n    import Queue as queue\n\n# Get environment variables\nversion = os.environ.get('VERSION', 'v2')\ncoffee_bean_url = os.environ.get('COFFEE_BEAN_URL', 'http://coffee-bean:8000')\n# Get success probability (0-100)\nsuccess_probability = float(os.environ.get('SUCCESS_PROBABILITY', '100'))\n# Get interval from environment variables (in seconds)\ninterval = float(os.environ.get('INTERVAL', '10'))\n\nprint(f'Barista {version} running, connecting to Coffee Bean ({coffee_bean_url})')\nprint(f'Success probability set to: {success_probability}%')\nprint(f'Using interval of {interval} seconds for periodic calls')\n\nclass RequestHandler(http.server.SimpleHTTPRequestHandler):\n    def do_GET(self):\n        # Determine if this request should succeed based on probability\n        will_succeed = random.random() * 100 < success_probability\n        \n        if will_succeed:\n            status_code = 200\n            status_text = 'ok'\n        else:\n            status_code = 503\n            status_text = 'service unavailable'\n            \n        self.send_response(status_code)\n        self.send_header('Content-type', 'application/json')\n        self.end_headers()\n        response = {\n            'service': 'barista',\n            'version': version,\n            'status': status_text, \n            'time': time.time(),\n            'connecting_to': {\n                'coffee_bean': coffee_bean_url\n            },\n            'success_probability': success_probability,\n            'interval': interval\n        }\n        self.wfile.write(json.dumps(response).encode())\n\ndef call_service(url, service_name):\n    try:\n        with urllib.request.urlopen(url, timeout=1) as response:\n            result = response.read()\n            print(f'Called {service_name} successfully: {result[:100]}')\n    except Exception as e:\n        print(f'Error calling {service_name}: {e}')\n\ndef periodic_calls():\n    while True:\n        # Call Coffee Bean\n        call_service(coffee_bean_url, 'Coffee Bean')\n        time.sleep(interval)  # Wait for configured interval\n\n# Start the background thread for periodic calls\nthread = threading.Thread(target=periodic_calls, daemon=True)\nthread.start()\n\n# Start the HTTP server\nhttpd = socketserver.TCPServer(('', 8080), RequestHandler)\nhttpd.serve_forever()"]
+        env:
+        - name: WORKON_HOME
+          value: /tmp
+        - name: COFFEE_BEAN_URL
+          value: "http://coffee-bean:8000"
+        - name: VERSION
+          value: "v2"
+        - name: SUCCESS_PROBABILITY
+          value: "10"
+        - name: INTERVAL
+          value: "10"
+        ports:
+        - containerPort: 8080
+        resources:
+          limits:
+            cpu: 50m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: coffee-bean
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coffee-bean
+  labels:
+    app: coffee-bean
+    service: coffee-bean
+spec:
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8080
+  selector:
+    app: coffee-bean
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coffee-bean
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coffee-bean
+      version: v1
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/proxyCPU: "25m"
+        sidecar.istio.io/proxyCPULimit: "50m"
+        sidecar.istio.io/proxyMemory: "64Mi"
+        sidecar.istio.io/proxyMemoryLimit: "128Mi"
+      labels:
+        app: coffee-bean
+        version: v1
+        istio.io/dataplane-mode: ambient
+    spec:
+      serviceAccountName: coffee-bean
+      containers:
+      - image: python:3.9
+        imagePullPolicy: IfNotPresent
+        name: coffee-bean
+        # Command for coffee-bean which is the final service in the chain
+        command: ["python3", "-c", "import http.server, socketserver, time, json, os\ntry:\n    import queue\nexcept ImportError:\n    import Queue as queue\n\n# Get environment variables\nworkon_home = os.environ.get('WORKON_HOME', '/tmp')\n\nprint(f'Coffee Bean running, endpoint service (WORKON_HOME: {workon_home})')\n\nclass RequestHandler(http.server.SimpleHTTPRequestHandler):\n    def do_GET(self):\n        self.send_response(200)\n        self.send_header('Content-type', 'application/json')\n        self.end_headers()\n        response = {\n            'service': 'coffee-bean',\n            'status': 'ok',\n            'time': time.time(),\n            'environment': {\n                'workon_home': workon_home\n            }\n        }\n        self.wfile.write(json.dumps(response).encode())\n\n# Start the HTTP server\nhttpd = socketserver.TCPServer(('', 8080), RequestHandler)\nhttpd.serve_forever()"]
+        env:
+        - name: WORKON_HOME
+          value: /tmp
+        ports:
+        - containerPort: 8080
+        resources:
+          limits:
+            cpu: 50m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
