@@ -74,3 +74,23 @@ items:
             namespace: eastwest
             labels:
               app: eastwest-gateway
+  - apiVersion: tsb.tetrate.io/v2
+    kind: Tenant
+    metadata:
+      name: coffeshop-ambient
+      annotations:
+        tsb.tetrate.io/organization: capitalone
+    spec:
+      description: Coffee Shop Ambient Mode
+      displayName: coffeshop-ambient
+  - apiVersion: tsb.tetrate.io/v2
+    kind: Workspace
+    metadata:
+      name: coffeshop-ws
+      annotations:
+        tsb.tetrate.io/organization: capitalone
+        tsb.tetrate.io/tenant: coffeshop-ambient
+    spec:
+      namespaceSelector:
+        names:
+          - "*/caffeine"
