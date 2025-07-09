@@ -30,6 +30,6 @@ items:
     kind: Gateway
     metadata:
       name: eastwest-gateway
-      namespace: eastwest
+      namespace: bookinfo
     spec:
       type: EASTWEST

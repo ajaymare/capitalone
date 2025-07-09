@@ -42,7 +42,7 @@ kubectl scale deployment bookinfo-ugw -n bookinfo --replicas=0
 kubectl scale deployment bookinfo-ugw -n bookinfo --replicas=1 
 ```
 
-## Eastwest Failover
+## Eastwest Traffic Failover to useast cluster
 ## Access Application internally 
 ```sh
 while true                                      
@@ -51,7 +51,7 @@ kubectl exec deployment/sleep -n sleep -c sleep -- curl -s -H "X-B3-Sampled: 1" 
 sleep 1
 done
 ```
-## Simulate Deployment Failure on CentralUS
+## Simulate Deployment Failure by scaling down details pod on CentralUS
 ```sh
 kubectl scale deployment details-v1 -n bookinfo --replicas=0
 ```
