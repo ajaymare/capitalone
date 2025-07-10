@@ -54,8 +54,4 @@ items:
             namespace: bookinfo
             labels:
               app: eastwest-gateway
-          #exposedServices:
-          #  - serviceLabels:
-          #      app: reviews
-          #  - serviceLabels:
-          #      app: details
+

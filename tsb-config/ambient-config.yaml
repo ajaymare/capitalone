@@ -1,0 +1,63 @@
+---
+apiVersion: v1
+kind: List
+items:
+  - apiVersion: tsb.tetrate.io/v2
+    kind: Tenant
+    metadata:
+      name: coffeshop-ambient
+      annotations:
+        tsb.tetrate.io/organization: capitalone
+    spec:
+      description: Coffee Shop Ambient Mode
+      displayName: coffeshop-ambient
+  - apiVersion: tsb.tetrate.io/v2
+    kind: Workspace
+    metadata:
+      name: coffeeshop-ws
+      annotations:
+        tsb.tetrate.io/organization: capitalone
+        tsb.tetrate.io/tenant: coffeshop-ambient
+    spec:
+      namespaceSelector:
+        names:
+          - "*/caffeine"
+  - apiVersion: gateway.tsb.tetrate.io/v2
+    kind: Group
+    metadata:
+      name: bookinfo-gg
+      annotations:
+        tsb.tetrate.io/organization: capitalone
+        tsb.tetrate.io/tenant: coffeeshop-ambient
+        tsb.tetrate.io/workspace: coffeeshop-ws
+    spec:
+      namespaceSelector:
+        names:
+          - "*/caffeine"
+      configMode: BRIDGED
+  - apiVersion: traffic.tsb.tetrate.io/v2
+    kind: Group
+    metadata:
+      name: coffeeshop-tg
+      annotations:
+        tsb.tetrate.io/organization: capitalone
+        tsb.tetrate.io/tenant: coffeeshop-ambient
+        tsb.tetrate.io/workspace: coffeeshop-ws
+    spec:
+      namespaceSelector:
+        names:
+          - "*/caffeine"
+      configMode: BRIDGED
+  - apiVersion: security.tsb.tetrate.io/v2
+    kind: Group
+    metadata:
+      name: coffeeshop-sg
+      annotations:
+        tsb.tetrate.io/organization: capitalone
+        tsb.tetrate.io/tenant: coffeeshop-ambient
+        tsb.tetrate.io/workspace: coffeeshop-ws
+    spec:
+      namespaceSelector:
+        names:
+          - "*/caffeine"
+      configMode: BRIDGED

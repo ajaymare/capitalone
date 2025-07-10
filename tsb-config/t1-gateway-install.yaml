@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: List
+items:
+  - apiVersion: install.tetrate.io/v1alpha1
+    kind: Gateway
+    metadata:
+      name: tier1-ugw
+      namespace: tier1
+    spec:
+      type: UNIFIED
+      #eastWestOnly: true
+      kubeSpec:
+        service:
+          type: LoadBalancer

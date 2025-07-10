@@ -1,0 +1,31 @@
+---
+apiVersion: v1
+kind: List
+items:
+  - apiVersion: gateway.tsb.tetrate.io/v2
+    kind: Gateway
+    metadata:
+      name: coffeeshop-ugw
+      annotations:
+        tsb.tetrate.io/organization: capitalone
+        tsb.tetrate.io/tenant: coffeeshop-ambient
+        tsb.tetrate.io/workspace: coffeeshop-ws
+        tsb.tetrate.io/gatewayGroup: coffeeshop-gg
+    spec:
+      workloadSelector:
+        namespace: caffeine
+        labels:
+          app: coffeeshop-ugw
+      http:
+        - name: coffeeshop-ssl
+          port: 80
+          hostname: "coffeeshop.tetrate.io"
+          #tls:
+          #  mode: SIMPLE
+          #  secretName: coffeeshop-cert
+          routing:
+            rules:
+              - route:
+                  serviceDestination:
+                    host: "caffeine/coffee-shop.caffeine.svc.cluster.local"
+                    port: 8000

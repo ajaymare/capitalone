@@ -1,0 +1,34 @@
+---
+apiVersion: gateway.tsb.tetrate.io/v2
+kind: Gateway
+metadata:
+  name: tier1-ugw
+  namespace: tier1
+  annotations:
+    tsb.tetrate.io/organization: tetrate
+    tsb.tetrate.io/tenant: tier1
+    tsb.tetrate.io/workspace: tier1-ws
+    tsb.tetrate.io/gatewayGroup: tier1-gg
+spec:
+  workloadSelector:
+    namespace: tier1
+    labels:
+      app: tier1-ugw
+  http:
+  - hostname: bookinfo.tetrate.io
+    name: tier1-ugw
+    port: 443
+    tls:
+      mode: SIMPLE
+      # make sure to use correct secret name that you created previously
+      secretName: bookinfo-cert
+    routing:
+      rules:
+      - route:
+          clusterDestination:
+            clusters: 
+              - name: azure-centralus
+                weight: 50
+              - name: azure-eastus
+                weight: 50
+                  

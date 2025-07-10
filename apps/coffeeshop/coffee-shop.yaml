@@ -47,7 +47,7 @@ spec:
       - name: netshoot
         image: nicolaka/netshoot:latest
         imagePullPolicy: IfNotPresent
-        command: ["sh", "-c", "while true; do curl -s http://coffee-shop:8000 -k -w \"@/etc/curl/curl-format.txt\"; sleep $INTERVAL; done"]
+        command: ["sh", "-c", "while true; do curl -s -k http://coffeeshop.tetrate.io -k -w \"@/etc/curl/curl-format.txt\"; sleep $INTERVAL; done"]
         resources:
           limits:
             cpu: 100m
