@@ -23,7 +23,7 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 ```
 
-## Access tier1 gateway
+## Access tier1 gateway from sleep service in centralus cluster
 ```sh
 while true                                      
 do
@@ -72,11 +72,3 @@ kubectl get gateway waypoint -n caffeine -o yaml
 istioctl ztunnel-config  service -n istio-system | grep caffeine
 istioctl ztunnel-config workload  -n cnp-istio | grep caffeine
 ```
-```sh
-while true                                      
-do
-kubectl exec deployment/sleep -n sleep -c sleep -- curl -s -k http://coffee-shop:8000
-sleep 1
-done
-```
-while true; do curl -s http://coffee-shop:8000 -k -w \"@/etc/curl/curl-format.txt\"; sleep $INTERVAL; done
