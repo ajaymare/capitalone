@@ -72,3 +72,13 @@ kubectl get gateway waypoint -n caffeine -o yaml
 istioctl ztunnel-config  service -n istio-system | grep caffeine
 istioctl ztunnel-config workload  -n cnp-istio | grep caffeine
 ```
+## Traffic
+
+netshoot pod on uscentral cluster is accessing coffee-shop service running on useast cluster
+
+```sh
+while true
+do curl -s -k http://coffeeshop.tetrate.io 
+sleep 1
+done
+```
